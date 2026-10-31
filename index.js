@@ -19,6 +19,15 @@ export async function connectToMongoDB() {
   }
 }
 const mongoClient = await connectToMongoDB();
+const db = mongoClient.db("studio")
+const studioCollection = db.collection("studio")
+
+app.post('/add-studio', async(req, res) =>{
+  const data = req.body
+  const result =await studioCollection.insertOne(data)
+console.log(result);
+  res.send({result})
+})
 
 http://localhost:5000/studios
 
