@@ -34,6 +34,11 @@ app.get('/studios', async(req,res) =>{
   res.send(result)
 })
 
+app.get ('/studio/:id', async(req, res) =>{
+  const {id} = req.params
+  const result = await studioCollection.findOne({_id:new ObjectId(id)})
+  res.send(result)
+})
 
 http://localhost:5000/studios
 
