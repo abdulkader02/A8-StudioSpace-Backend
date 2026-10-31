@@ -29,6 +29,12 @@ console.log(result);
   res.send({result})
 })
 
+app.get('/studios', async(req,res) =>{
+  const result = await studioCollection.find().toArray()
+  res.send(result)
+})
+
+
 http://localhost:5000/studios
 
 app.get('/', (req, res) => {
