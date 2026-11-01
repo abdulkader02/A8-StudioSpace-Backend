@@ -21,6 +21,8 @@ export async function connectToMongoDB() {
 const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("studio")
 const studioCollection = db.collection("studio")
+const bookCollection = db.collection("bookings")
+
 
 app.post('/add-studio', async(req, res) =>{
   const data = req.body
@@ -38,6 +40,32 @@ app.get ('/studio/:id', async(req, res) =>{
   const {id} = req.params
   const result = await studioCollection.findOne({_id:new ObjectId(id)})
   res.send(result)
+})
+
+
+app.patch('/studio/:id', async(req, res) =>{
+  const {id} = req.params
+  const updatedData = req.body
+  const result = await studioCollection.updateOne(
+    {_id:new ObjectId(id)},
+    {$set: updatedData}
+  )
+  res.json(result)
+})
+
+
+app.delete('/studio/:id', async(req, res) =>{
+  const {id} = req.params
+  const result = await studioCollection.deleteOne(
+    {_id:new ObjectId(id)},
+  )
+  res.json(result)
+})
+
+app.post('/booking', async(req, res) =>{
+  const data = req.body
+  const result =await bookCollection.insertOne(data)
+  res.send({result})
 })
 
 http://localhost:5000/studios
