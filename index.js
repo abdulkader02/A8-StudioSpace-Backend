@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
@@ -156,7 +155,7 @@ app.patch("/studio/:id", async (req, res) => {
 
     const result = await studioCollection.updateOne(
       { _id: new ObjectId(id) },
-      { $set: updatedData }
+      { $set: updatedData },
     );
 
     res.json(result);
@@ -171,7 +170,7 @@ app.patch("/studio/:id", async (req, res) => {
 });
 
 // ======================================
-// DELETE STUDIO
+// DELETE STUDIO PROTECTED
 // ======================================
 
 app.delete("/studio/:id", async (req, res) => {
@@ -201,31 +200,60 @@ app.delete("/studio/:id", async (req, res) => {
 });
 
 // ======================================
-// CREATE BOOKING
+// CREATE BOOKING PROTECTED
 // ======================================
 
 app.post("/booking", async (req, res) => {
   try {
     const data = req.body;
 
+    if (
+      !data.studioId ||
+      !data.date ||
+      !data.startTime ||
+      !data.duration ||
+      !data.crewCount ||
+      !data.user?.email
+    ) {
+      return res.status(400).send({
+        success: false,
+        message: "Missing required booking information.",
+      });
+    }
+
+    // Check if user already has an active booking for this studio
+    const existingBooking = await bookingCollection.findOne({
+      studioId: data.studioId,
+      "user.email": data.user.email,
+      status: { $in: ["Pending", "Confirmed"] },
+    });
+
+    if (existingBooking) {
+      return res.status(409).send({
+        success: false,
+        message: "This studio is already in your booking list!",
+      });
+    }
+
     const bookingData = {
       ...data,
       status: "Pending",
+      createdAt: new Date(),
     };
 
     const result = await bookingCollection.insertOne(bookingData);
 
     res.status(201).send({
       success: true,
-      message: "Booking created successfully.",
-      insertedId: result.insertedId,
+      message: "Booking request submitted successfully!",
+      result,
     });
   } catch (error) {
-    console.error("Create Booking Error:", error);
+    console.error("Booking creation error:", error);
 
     res.status(500).send({
       success: false,
-      message: "Unable to create booking.",
+      message: "Failed to create booking.",
     });
   }
 });
@@ -277,7 +305,7 @@ app.patch("/booking/:id/cancel", async (req, res) => {
         $set: {
           status: "Cancelled",
         },
-      }
+      },
     );
 
     if (result.matchedCount === 0) {
@@ -364,3 +392,4 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+export default app;
