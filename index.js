@@ -2,7 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
-
+import { createRemoteJWKSet, jwtVerify } from "jose";
 const app = express();
 const port = 5000;
 
@@ -27,6 +27,28 @@ const db = mongoClient.db("studio");
 
 const studioCollection = db.collection("studio");
 const bookingCollection = db.collection("bookings");
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({ msg: "Unauthorized!" });
+  }
+
+  const JWKS = createRemoteJWKSet(
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+  );
+
+  try { 
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    return res.status(500).send({ msg: "Server Error!" });
+  }
+};
 
 // ======================================
 // FEATURED STUDIOS API
@@ -78,7 +100,7 @@ app.get("/studios", async (req, res) => {
 // ADD STUDIO
 // ======================================
 
-app.post("/add-studio", async (req, res) => {
+app.post("/add-studio", verifyToken, async (req, res) => {
   try {
     const data = req.body;
 
@@ -141,7 +163,7 @@ app.get("/studio/:id", async (req, res) => {
 // UPDATE STUDIO
 // ======================================
 
-app.patch("/studio/:id", async (req, res) => {
+app.patch("/studio/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
@@ -173,7 +195,7 @@ app.patch("/studio/:id", async (req, res) => {
 // DELETE STUDIO PROTECTED
 // ======================================
 
-app.delete("/studio/:id", async (req, res) => {
+app.delete("/studio/:id", verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -203,7 +225,7 @@ app.delete("/studio/:id", async (req, res) => {
 // CREATE BOOKING PROTECTED
 // ======================================
 
-app.post("/booking", async (req, res) => {
+app.post("/booking", verifyToken, async (req, res) => {
   try {
     const data = req.body;
 
